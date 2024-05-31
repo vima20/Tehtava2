@@ -1,0 +1,112 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+
+const Filter = ({ searchQuery, handleSearchChange }) => {
+  return (
+    <div>
+      filter shown with <input value={searchQuery} onChange={handleSearchChange} />
+    </div>
+  );
+};
+
+const PersonForm = ({ newName, newNumber, handleNameChange, handleNumberChange, addPerson }) => {
+  return (
+    <form onSubmit={addPerson}>
+      <div>
+        name: <input value={newName} onChange={handleNameChange} />
+      </div>
+      <div>
+        number: <input value={newNumber} onChange={handleNumberChange} />
+      </div>
+      <div>
+        <button type="submit">add</button>
+      </div>
+    </form>
+  );
+};
+
+const Persons = ({ personsToShow }) => {
+  return (
+    <ul>
+      {personsToShow.map(person => 
+        <li key={person.id}>{person.name} {person.number}</li>
+      )}
+    </ul>
+  );
+};
+
+const App = () => {
+  const [persons, setPersons] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [newNumber, setNewNumber] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    axios
+      .get('http://localhost:3001/persons')
+      .then(response => {
+        setPersons(response.data);
+      });
+  }, []);
+
+  const handleNameChange = (event) => {
+    setNewName(event.target.value);
+  };
+
+  const handleNumberChange = (event) => {
+    setNewNumber(event.target.value);
+  };
+
+  const handleSearchChange = (event) => {
+    setSearchQuery(event.target.value);
+  };
+
+  const addPerson = (event) => {
+    event.preventDefault();
+
+    const existingPerson = persons.find(person => person.name === newName);
+    if (existingPerson) {
+      alert(`${newName} is already added to phonebook`);
+      return;
+    }
+
+    const personObject = {
+      name: newName,
+      number: newNumber
+    };
+
+    axios
+      .post('http://localhost:3001/persons', personObject)
+      .then(response => {
+        setPersons([...persons, response.data]);
+        setNewName('');
+        setNewNumber('');
+      })
+      .catch(error => {
+        console.error('Error adding person:', error);
+      });
+  };
+
+  const personsToShow = persons.filter(person =>
+    person.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <div>
+      <h2>Phonebook</h2>
+      <Filter searchQuery={searchQuery} handleSearchChange={handleSearchChange} />
+      <h3>Add a new</h3>
+      <PersonForm
+        newName={newName}
+        newNumber={newNumber}
+        handleNameChange={handleNameChange}
+        handleNumberChange={handleNumberChange}
+        addPerson={addPerson}
+      />
+      <h3>Numbers</h3>
+      <Persons personsToShow={personsToShow} />
+    </div>
+  );
+};
+
+export default App;
